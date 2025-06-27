@@ -112,7 +112,6 @@ temperature_outline = label.Label(terminalio.FONT, text=f"Temp={temperatureResul
 
 main_group.append(Sky)
 main_group.append(circle)
-#main_group.append(place2)
 main_group.append(place)
 main_group.append(place_outline)
 main_group.append(temperature)
