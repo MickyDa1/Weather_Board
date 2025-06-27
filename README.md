@@ -43,8 +43,9 @@ i then went onto the user input which was more difficult then i thought it would
 
 ![image](https://github.com/user-attachments/assets/f78fdf2d-afa9-4a16-b6ad-9f10aca11a5f)
 
-from there it was just about making a GUI that didnt run on the board but could write to the "city.txt" file on it. this i did by using a library called TKinter and since i had a decent amount of experience i had got it working pretty quickly. which you can see in the video titled "WEATHER_BOARD_DEMO" in the main branch and a picture of the GUI below
+from there it was just about making a GUI that didnt run on the board but could write to the "city.txt" file on it. this i did by using a library called TKinter and since i had a decent amount of experience i had got it working pretty quickly.
 
 ![image](https://github.com/user-attachments/assets/97202e13-e324-4d95-bebd-946f20a6de72)
+
 
 
