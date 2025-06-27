@@ -1,0 +1,140 @@
+from time import sleep
+import displayio
+import board
+import json
+from adafruit_matrixportal.matrixportal import MatrixPortal
+from adafruit_display_text import label
+from adafruit_bitmap_font import bitmap_font
+from adafruit_display_shapes.rect import Rect
+custom_font_8 = bitmap_font.load_font("/fonts/DejavuSans-8.bdf")
+custom_font_9 = bitmap_font.load_font("/fonts/DejavuSans-9.bdf")
+custom_font_10 = bitmap_font.load_font("/fonts/DejavuSans-10-10.bdf")
+custom_font_11 = bitmap_font.load_font("/fonts/DejavuSans-11.bdf")
+
+
+def check_answer(guess, answer, letters_used):
+    matches = ["Grey", "Grey", "Grey", "Grey", "Grey"]
+    letter_count = {}
+
+    for letter in answer: # count the number of occurrences of each letter in the answer
+        letter_count[letter] = letter_count.get(letter, 0) + 1
+    
+    for i in range(5): # checks for correct letters in the correct places
+        if guess[i] == answer[i]:
+            matches[i] = "Green"
+            letters_used[guess[i]] = "Correct"
+            letter_count[guess[i]] -= 1 # remove a count from the letter
+
+    for i in range(5):
+        if matches[i] == "Grey" and guess[i] in letter_count and letter_count[guess[i]] > 0:
+            matches[i] = "Yellow"
+            letter_count[guess[i]] -= 1
+            letters_used[guess[i]] = "Present"
+        else:
+            if guess[i] not in letters_used: # if it doesn't already exist add it
+                letters_used[guess[i]] = "Wrong"
+            if letters_used[guess[i]] != "Correct" and letters_used[guess[i]] != "Present": # ensuring it doesn't overwrite the previous used letters
+                letters_used[guess[i]] = "Wrong"
+
+    print_guess(matches, guess, y)
+    return letters_used
+
+### Prints the guess to the display and colours the squares based on the 
+### matches
+### Green = Correct letter in the correct place
+### Yellow = Correct letter in the wrong place
+### Grey = Incorrect letter
+def print_guess(matches, guess, y):
+    backgroundColour = None
+    rectY = y - 4
+    x = 0
+    for i in range(5):
+        textColour = 0x000000
+        if matches[i] == "Green":
+            backgroundColour = 0x00FF00
+        elif matches[i] == "Yellow":
+            backgroundColour = 0xFFFF00
+        else:
+            backgroundColour = None
+            textColour = 0xFFFFFF
+        if guess[i] == "I" or guess[i] == "J": # these letters are not centered properly
+            # look to rewrite this to be smarter with all letters
+            letterToDisplay = "  " + guess[i] + " "
+        else:
+            letterToDisplay = " " + guess[i] + " "
+        rectangle = Rect(x+1, rectY, 11, 9, fill=backgroundColour) # draws a rectangle for the letter if it needs one
+        # using rectangles instead of background colour because it allows each square to the be the same size instead based
+        # on the letter size
+        wordle_board.append(rectangle) 
+        text_area = label.Label(custom_font_10, text=letterToDisplay, color=textColour, x=x , y=y, padding_top=1)
+        wordle_board.append(text_area)
+        x += 12
+
+### Draws the keyboard of letters the user has used / not used on the screen
+def draw_keyboard(keyboard):
+        x=64
+        y=8 
+        ## change this to change the order in which it displays to the user
+        key_order = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+        colours = {"Unused": 0xFFFFFF, "Correct": 0x00FF00, "Present": 0xFFFF00, "Wrong": 0xF23113} ## changes these to edit the colour of the letters
+
+        for number, letter in enumerate(key_order):
+            if number % 4 == 0 and number != 0: ## change this to edit the number of letters per row
+                y+= 9
+                x=64
+            status = keyboard.get(letter, "Unused") # default to unused if not found
+            colour = colours.get(status, 0xFFFFFF) # default to white if not found
+            letter_to_display = label.Label(custom_font_10, text=" " + letter + " ", color=colour, x=x, y=y, base_alignment=True)
+            wordle_board.append(letter_to_display)
+            
+            x+= 17
+
+### Updates the list of letters the user has used, correctly, incorrectly and are present in the answer
+def checkKeyboard(keyboard, lettersUsed):
+    for letter in lettersUsed:
+        if lettersUsed[letter] == "Correct" and keyboard[letter] != "Correct":
+            keyboard[letter] = "Correct"
+        elif lettersUsed[letter] == "Present" and keyboard[letter] != "Correct":
+            keyboard[letter] = "Present"
+        elif lettersUsed[letter] == "Wrong" and keyboard[letter] != "Correct" and keyboard[letter] != "Present":
+            keyboard[letter] = "Wrong"
+        
+# keyboard to store the letters by the user        
+keyboard = {'Q' : "Unused", 'W' : "Unused", 'E' : "Unused", 'R' : "Unused", 'T' : "Unused", 'Y' : "Unused", 'U' : "Unused", 'I' : "Unused", 'O' : "Unused", 'P' : "Unused", 
+                    'A' : "Unused", 'S' : "Unused", 'D' : "Unused", 'F' : "Unused", 'G' : "Unused", 'H' : "Unused", 'J' : "Unused", 'K' : "Unused", 'L' : "Unused",
+                    'Z' : "Unused", 'X' : "Unused", 'C' : "Unused", 'V' : "Unused", 'B' : "Unused", 'N' : "Unused", 'M' : "Unused"}
+
+# --- Display setup ---
+matrixportal = MatrixPortal(status_neopixel=board.NEOPIXEL, debug=True, height=64, width =64, bit_depth=1)
+
+wordle_board = displayio.Group()
+display = matrixportal.graphics.display
+
+# Create a display group
+
+
+with open("/test.json") as f: # Open the JSON file
+    data = json.load(f)
+words = []
+for key in data:
+    words.append(key["word"])
+
+answer = "FIJKL" # change this to change the answer to guess
+
+letters_used = {}
+
+y = 5
+for down in range(6):
+    x = 0
+    guess = words[down]
+    for row in range(5):
+        letters_used = check_answer(guess, answer, letters_used)
+        checkKeyboard(keyboard, letters_used)
+    y+= 10
+
+draw_keyboard(keyboard) 
+    
+display.root_group = wordle_board
+
+while True: # main loop
+    pass
